@@ -1,7 +1,8 @@
-from flask import Flask, render_template, jsonify, request;
+from flask import Flask, render_template, jsonify, request, session;
 from dotenv import load_dotenv
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_oauth_requests
+from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
@@ -9,7 +10,6 @@ app = Flask(__name__)
 load_dotenv()
 google_client_id = os.environ.get('GOOGLE_CLIENT_ID')
 
-app = Flask(__name__)
 
 takes = [
     {
@@ -40,7 +40,7 @@ def signup():
 
 @app.route('/auth/google', methods=['POST'])
 def google_auth():
-    print("Google auth endpoint hit: /auth/google")
+    # print("Google auth endpoint hit: /auth/google")
 
     data = request.get_json()
     # print(f"data: {data}")
@@ -51,6 +51,7 @@ def google_auth():
     token = data['token']
 
     try:
+        # gotten from https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.id_token.html#module-google.oauth2.id_token
         print("Verifying token...")
         idinfo = id_token.verify_oauth2_token(
             token, 
@@ -58,20 +59,18 @@ def google_auth():
             google_client_id
         )
         print(f"idinfo: {idinfo}")
-        
-        user_id = idinfo['sub']
-        email = idinfo['email']
+
+        user_google_id = idinfo.get('sub', '')
+        email = idinfo.get('email', '')
         name = idinfo.get('name', '')
         
-        print(f"Authenticated user: {email}")
-
         # TODO: Check if user exists in database and decide signup or login
         # returning account info from DB upon successful auth
         return jsonify({
             "success": True, 
             "message": "Authentication successful",
             "user": {
-                "id": user_id,
+                "id": user_google_id,
                 "email": email,
                 "name": name
             }
@@ -80,9 +79,6 @@ def google_auth():
     except ValueError as e:
         print(f"Error verifying token: {e}")
         return jsonify({"success": False, "message": f"auth failed"}), 401
-
-    
-    return jsonify({"success": True, "message": "just testing for now"})
 
 @app.after_request
 def add_security_headers(response):
