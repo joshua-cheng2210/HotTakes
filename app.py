@@ -10,6 +10,9 @@ app = Flask(__name__)
 load_dotenv()
 google_client_id = os.environ.get('GOOGLE_CLIENT_ID')
 
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///hottakes_users.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
 
 takes = [
     {
